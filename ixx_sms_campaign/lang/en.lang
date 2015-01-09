@@ -1,0 +1,140 @@
+<?php
+/* vim: set expandtab tabstop=4 softtabstop=4 shiftwidth=4:
+  CodificaciÃ³n: UTF-8
+  +-------------------------------------------------------------------------------+
+  | SMS MODULE VERSION 1.0                                                        |
+  | http://www.iberoxarxa.es                                                      |
+  +-------------------------------------------------------------------------------+
+  | Copyright (c) 2011 Iberoxarxa Servixios Integrales, S.L.                      |
+  +-------------------------------------------------------------------------------+
+  | C.E.T.I.C CITILAB                                                             |
+  | IBEROXARXA SERVICIOS INTEGRALES, SL                                           |
+  | 08940 - CORNELLA DE LLOBREGAT                                                 |
+  | BARCELONA - SPAIN                                                             |
+  | http://www.iberoxarxa.es                                                      |
+  | contactar@iberoxarxa.es                                                       |
+  +-------------------------------------------------------------------------------+
+  | The contents of this file are subject to the General Public License           |
+  | (GPL) Version 2 (the "License"); you may not use this file except in          |
+  | compliance with the License. You may obtain a copy of the License at          |
+  | http://www.opensource.org/licenses/gpl-license.php                            |
+  |                                                                               |
+  | Software distributed under the License is distributed on an "AS IS"           |
+  | basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See           |
+  | the License for the specific language governing rights and                    |
+  | limitations under the License.                                                |
+  +-------------------------------------------------------------------------------+
+  | The Original Code is: Iberoxarxa Servicios Integrales                         |
+  | The Initial Developer of the Original Code is Iberoxarxa Servicios Integrales |
+  +-------------------------------------------------------------------------------+
+  */
+global $arrLan;
+$arrLan = array(
+"Trunk"=>"Trunk",
+"Numbers"=>"Numbers",
+"Show"=>"Show",
+"Stop"=>"Stop",
+"Resume"=>"Resume",
+"List Campaigns"=>"Campaign List",
+"Last"=>"Last",
+"Number"=>"Number",
+"CLID"=>"Caller ID",
+"Title"=>"Campaign",
+"Message"=>"Message to send",
+"MessageS"=>"Message",
+"Count"=>"Characters",
+"Messages"=>"Messages",
+"Start" => "Start Date",
+"Start Time" => "Start Time",
+"End Time" => "End Time",
+"Retries" => "Retries",
+"Name Campaign" => "Name",
+"STATUSNS"=>"Stopped",
+"STATUSNP"=>"Pending",
+"STATUSNB"=>"Bloqued",
+"STATUSNE"=>"Sending",
+"STATUSNF"=>"Sended",
+"STATUSNN"=>"Not allowed",
+"STATUSNI"=>"Invalid number",
+"STATUSNU"=>"Unknow error",
+"STATUSCS"=>"Stopped",
+"STATUSCP"=>"Pending",
+"STATUSCE"=>"Executing",
+"STATUSCF"=>"Ended",
+"STATUSCN"=>"Not allowed",
+"STATUSCI"=>"Invalid number",
+"STATUSCU"=>"Unknow error",
+"Messages"=>"Messages",
+"Completed"=>"Completed",
+"APPLY_CHANGES"=>"Save",
+"Unable to parse start date specification" => "Unable to parse start date specification",
+"Unable to parse start time specification" => "Unable to parse start time specification",
+"Unable to parse end time specification" => "Unable to parse end time specification",
+"Hora inicial / final incorrecta"=>"End time must be greater than start time",
+"Name Campaign already exists" => "A campaign whit same name already exists",
+"Invalid CSV File" => "Invalid CSV File",
+"Invalid number" => "Invalid number",
+"Invalid CSV File Line" => "Invalid CSV File Line ",
+
+"Outgoing Campaigns" => "Outgoing Campaigns",
+"Campaigns" => "Campaigns",
+"New Campaign" => "New Campaign",
+"Campaigns List" => "Campaigns List",
+"View Campaign" => "View Campaign",
+"Create New Campaign" => "Create new campaign",
+"Completed Calls" => "Completed Calls",
+"Average Time" => "Average Time",
+"File name" => "File name",
+"Campaign ID is not valid" => "Campaign ID is not valid",
+"Name Campaign can't be empty" => "Campaign Name can't be empty",
+"Retries must be numeric" => "Retries must be numeric",
+"Invalid Start Date"=>"Invalid Start Date",
+"Invalid Start Time" => "Invalid Start Time",
+"Invalid End Time" => "Invalid End Time",
+"Invalid Campaign ID" => "Invalid Campaign ID",
+"Element without phone number" => "Element without phone number",
+"Edit Campaign" => "Edit Campaign",
+"Error when Activating the Campaign" => "Error when Activating the Campaign",
+"Error when eliminating the Campaign" => "Error when eliminating the Campaign",
+"Start Time must be greater than End Time" => "Start Time must be greater than End Time",
+"CSV Data" => "CSV Data",
+"Phone Customer" => "Phone Customer",
+"Name Customer" => "Name Customer",    
+"Status Call"=>"Status Call",
+"Status"=>"Status",
+"Options"=>"Options",
+"Success" => "Success",
+"Failure" => "Failure",
+"ShortCall" => "ShortCall",
+"Error when deleting the Campaign" => "Error when deleting the Campaign",
+"This campaign have calls done"=>"This campaign have calls done",
+"Delete Error"=>"Delete Error",
+"Error when deleting the Campaign" => "Error when deleting the Campaign",
+"This campaign have calls done"=>"This campaign have calls done",
+"There aren't form selected"=>"There aren't form selected",
+"Are you sure you wish to delete campaign?"=>"Are you sure you wish to delete campaign?",
+"Error when desactivating the Campaign" => "Error when desactivating the Campaign",
+"Desactivate" => "Desactivate", //Bruno agrego
+"Activate Error" => "Activate Error", //Bruno agrego
+"Desactivate Error" => "Desactivate Error", //Bruno agrego
+"Campaign ID is not valid" => "Campaign ID is not valid",
+"Queue must be numeric"=>"Queue must be numeric",
+"Queue is being used, choose other one"=>'Queue is being used, choose other one',
+"Address"=>"Address",
+"Date & Time"=>"Date & Time",
+"Duration"=>"Duration",
+"Finish"=>"Finish",
+"Active"=>"Active",
+"All"=>"All",
+"Inactive"=>"Inactive",
+"Range Date" => "Range Date",
+"Schedule per Day" => "Schedule per Day",
+"Start time" => "Start time",
+"End time" => "End time",
+"Archivo de Llamadas"=> "Phone File",
+"RetCode"=>"Return Code",
+"Create on Pause"=>"Create campaign on pause",
+"Use List"=>"Use List",
+"List not found"=>"You must select a phone file or a list phone",
+);
+?>

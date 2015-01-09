@@ -1,0 +1,377 @@
+<?php
+/* vim: set expandtab tabstop=4 softtabstop=4 shiftwidth=4:
+  CodificaciÃ³n: UTF-8
+  +-------------------------------------------------------------------------------+
+  | SMS MODULE VERSION 1.0                                                        |
+  | http://www.iberoxarxa.es                                                      |
+  +-------------------------------------------------------------------------------+
+  | Copyright (c) 2011 Iberoxarxa Servixios Integrales, S.L.                      |
+  +-------------------------------------------------------------------------------+
+  | C.E.T.I.C CITILAB                                                             |
+  | IBEROXARXA SERVICIOS INTEGRALES, SL                                           |
+  | 08940 - CORNELLA DE LLOBREGAT                                                 |
+  | BARCELONA - SPAIN                                                             |
+  | http://www.iberoxarxa.es                                                      |
+  | contactar@iberoxarxa.es                                                       |
+  +-------------------------------------------------------------------------------+
+  | The contents of this file are subject to the General Public License           |
+  | (GPL) Version 2 (the "License"); you may not use this file except in          |
+  | compliance with the License. You may obtain a copy of the License at          |
+  | http://www.opensource.org/licenses/gpl-license.php                            |
+  |                                                                               |
+  | Software distributed under the License is distributed on an "AS IS"           |
+  | basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See           |
+  | the License for the specific language governing rights and                    |
+  | limitations under the License.                                                |
+  +-------------------------------------------------------------------------------+
+  | The Original Code is: Iberoxarxa Servicios Integrales                         |
+  | The Initial Developer of the Original Code is Iberoxarxa Servicios Integrales |
+  +-------------------------------------------------------------------------------+
+  */
+
+require_once "/var/www/html/libs/paloSantoDB.class.php";
+require_once "/var/www/html/libs/paloSantoACL.class.php";
+require_once "/var/www/html/libs/paloSantoConfig.class.php";
+require_once "/var/www/html/modules/ixx_sms_campaign/libs/IXXSMSCampaign.class.php";
+require_once "/var/www/html/libs/paloSantoConfig.class.php";
+require_once "/var/www/html/libs/paloSantoDB.class.php";
+
+class IXXSMS {
+	var $_DB; 
+	var $errMsg;
+
+	function IXXSMS(&$pDB) {
+	        // Se recibe como parÃ¡metro una referencia a una conexiÃ³n paloDB
+        	if (is_object($pDB)) {
+        	    $this->_DB =& $pDB;
+	            $this->errMsg = $this->_DB->errMsg;
+        	} else {
+	            $dsn = (string)$pDB;
+        	    $this->_DB = new paloDB($dsn);
+
+        	    if (!$this->_DB->connStatus) {
+        	        $this->errMsg = $this->_DB->errMsg;
+        	        // debo llenar alguna variable de error
+        	    } else {
+        	        // debo llenar alguna variable de error
+        	    }
+        	}
+	}
+
+	function send($src,$clid,$destination,$ids,$text,$queue=false,$trunk=0) {
+		//Obtenemos extensión, a efectos de registrar en el CDR el envío del SMS.
+		//En el caso que se pase el argumento "src" se considera que la extensión es el
+		//propio valor de "src"; sino, se obtiene la extensión asociada al usuario de Elastix.
+		if (($src == null) || ($src == "")) {			
+			if (isset($_SESSION['elastix_user'])) {
+				$pDBACL = new paloDB("sqlite3:////var/www/db/acl.db");
+				$pACL = new paloACL($pDBACL);
+				$extension = $pACL->getUserExtension($_SESSION['elastix_user']);
+
+				if ($extension == null) {
+					$extension = "";
+				}
+			} else {
+				$extension = "";
+			}
+		} else {
+			$extension = $src;
+		}
+
+		if ($queue) {
+			//Encolamos peticiónreturn
+			$campaign = new IXXSMSCampaign($this->_DB);
+	        $campaign->addCampaignNumbers(1,array("0"=>array("__PHONE_NUMBER"=>$destination, "__MESSAGE"=>$text, "__SRC"=>$extension, "__TRUNK"=>$trunk)));
+
+			return array(-2,"Message queued.");
+		} else {
+            //Compromabos si el mensaje es 100% SMS o no
+            $smsAlphabet = $this->isSmsAlphabet($text);
+
+			//Mandamos SMS al momento
+    		//Obtenemos troncales
+            if ($trunk > 0) {
+        		$sql = "select * from sms_trunk where active = 1 and id = $trunk";
+            } else {
+        		$sql = "select * from sms_trunk where active = 1 order by trunk_priority";
+            }
+
+    		$resultTrunks = $this->_DB->fetchTable($sql,true);
+    		if (count($resultTrunks) == 0) {
+    			return array(-1,"There are no trunks defined.");
+    		}
+
+    		foreach($resultTrunks as $trunkData) {
+                //Instanciamos el proveedor
+                $providerClass = "IXXSMS".$trunkData["service_type"]."Provider";
+
+                require_once "/var/www/html/libs/sms/$providerClass.class.php";
+    
+    			$provider = new $providerClass();
+
+                //Enviamos
+            	$result = $provider->send(($clid!=""?$clid:trim($trunkData['clid'])),$this->normalizeDestination($destination,$trunkData),($smsAlphabet?$text:$this->getUnicode($text)),$trunkData,!$smsAlphabet);        
+    			if ($result[0] == 0) {
+    				//Registramos el envío en el CDR
+            		$pConfig = new paloConfig("/etc", "amportal.conf", "=", "[[:space:]]*=[[:space:]]*");
+            		$arrConfig = $pConfig->leer_configuracion(false);
+
+    				$dsn = $arrConfig['AMPDBENGINE']['valor']."://".$arrConfig['AMPDBUSER']['valor'].":".$arrConfig['AMPDBPASS']['valor']."@".$arrConfig['AMPDBHOST']['valor']."/asteriskcdrdb";
+    				$pDBCDR = new paloDB($dsn);
+
+    				$this->registrarEnvioSMS($pDBCDR,$extension,$destination,$text);
+
+                    break;
+    			}
+            }
+		}
+
+		return $result;
+	}
+
+    function normalizeDestination($destination,$trunkData) {
+        if ($trunkData['append_country_code'] == 1) {
+            //El troncal requiere prefijar el número con el el código de país
+
+            //Obtenemos configuración
+            $sql = "select * from config";
+
+   	    	$config = $this->_DB->fetchTable($sql,true);
+   	    	if (count($config) == 0) {
+   	    		die();
+   	    	}
+
+            //Si el número tiene una longitud mayor de la máxima es que tiene ya el country code
+            if (strlen(trim($destination)) <= $config[0]['max_mobile_length']) {
+                //Miramos si el número contiene el country code
+                $countryCode = $config[0]['country_code'];
+    
+                $hasCountryCode = preg_match('/^'.preg_quote($countryCode)."/", $destination);
+                if ($hasCountryCode) {
+                    $countryCode = "";
+                }
+            } else {
+                $countryCode = "";
+            }
+        }
+
+        return $countryCode.$destination;
+    }
+
+	function registrarEnvioSMS ($pDB,$ext,$number,$text) {
+	        $sStatus = "ANSWERED";
+
+        	$sPeticionSQL = paloDB::construirInsert(
+        	        "cdr",
+	                array(
+        	            "calldate"     =>  paloDB::DBCAMPO(date("Y-m-d H:i:s")),
+        	            "clid"    	   =>  paloDB::DBCAMPO(""),
+        	            "src"     	   =>  paloDB::DBCAMPO($ext),
+        	            "dst"          =>  paloDB::DBCAMPO($number),
+        	            "dcontext"     =>  paloDB::DBCAMPO(""),
+        	            "channel"      =>  paloDB::DBCAMPO(""),
+        	            "dstchannel"   =>  paloDB::DBCAMPO("SMS"),
+        	            "lastapp"      =>  paloDB::DBCAMPO(""),
+        	            "lastdata"     =>  paloDB::DBCAMPO(""),
+        	            "duration"     =>  paloDB::DBCAMPO(0),	
+        	            "billsec"      =>  paloDB::DBCAMPO(0),
+        	            "disposition"  =>  paloDB::DBCAMPO($sStatus),
+        	            "amaflags"     =>  paloDB::DBCAMPO(3),
+        	            "accountcode"  =>  paloDB::DBCAMPO(""),
+        	            "uniqueid"     =>  paloDB::DBCAMPO(""),
+        	            "userfield"    =>  paloDB::DBCAMPO(""),
+        	        ));
+
+	        $result = $pDB->genQuery($sPeticionSQL);
+        	if ($result) {
+		} else {
+		}
+	}
+
+	function getConfig() {
+		$sql = "select * from config";
+
+		$result = $this->_DB->fetchTable($sql,true);
+
+		return $result;
+	}
+
+    function updateConfig($cc,$prefixes,$min,$max) {
+		$sql = "delete from config";
+		$result = $this->_DB->fetchTable($sql,true);
+
+		$sql = "insert into config(country_code,mobile_prefixes,min_mobile_length,max_mobile_length) values($cc,'$prefixes',$min,$max)";
+		$result = $this->_DB->fetchTable($sql,true);
+
+		return $result;
+    }
+
+	function getTrunks() {
+		$sql = "select * from sms_trunk order by trunk_priority";
+
+		$result = $this->_DB->fetchTable($sql,true);
+
+		return $result;
+	}
+
+	function getActiveTrunks() {
+		$sql = "select * from sms_trunk where active = 1 order by trunk_priority";
+
+		$result = $this->_DB->fetchTable($sql,true);
+
+		return $result;
+	}
+
+	function getTrunk($id) {
+		$sql = "select * from sms_trunk where id=$id";
+
+		$result = $this->_DB->fetchTable($sql,true);
+
+		return $result;
+	}
+
+	function getServiceType($type) {
+		$sql = "select * from service_types where type='$type'";
+
+		$result = $this->_DB->fetchTable($sql,true);
+
+		return $result;
+	}
+
+	function getServiceTypes() {
+		$sql = "select * from service_types where active=1 order by listo";
+
+		$result = $this->_DB->fetchTable($sql,true);
+
+		return $result;
+	}
+
+	function getProviders($type) {
+		$sql = "select * from service_type_providers where service_type = '$type'";
+
+		$result = $this->_DB->fetchTable($sql,true);
+
+		return $result;
+	}
+
+	function getProvider($provider) {
+		$sql = "select * from service_type_providers where provider = $provider";
+
+		$result = $this->_DB->fetchTable($sql,true);
+
+		return $result;
+	}
+
+	function updateTrunk($id,$name,$active,$service_type,$server,$user,$password,$port,$priority,$clid,$system_type,$append_country_code,$script) {
+	        $this->errMsg = "";
+
+    		$active = ($active=='on'?1:0);
+    		$append_country_code = ($append_country_code=='on'?1:0);
+
+	        $sPeticionSQL = paloDB::construirUpdate(
+        	    "sms_trunk",
+        	    array(
+        	        "name"                   =>  paloDB::DBCAMPO($name),
+        	        "active"                 =>  paloDB::DBCAMPO($active),
+        	        "service_type"           =>  paloDB::DBCAMPO($service_type),
+        	        "server"                 =>  paloDB::DBCAMPO($server),
+        	        "user"                   =>  paloDB::DBCAMPO($user),
+        	        "password"               =>  paloDB::DBCAMPO($password),
+        	        "port"                   =>  paloDB::DBCAMPO($port),
+        	        "trunk_priority"         =>  paloDB::DBCAMPO($priority),
+        	        "clid"                   =>  paloDB::DBCAMPO($clid),
+        	        "system_type"            =>  paloDB::DBCAMPO($system_type),
+        	        "append_country_code"    =>  paloDB::DBCAMPO($append_country_code),    
+        	        "script"                 =>  paloDB::DBCAMPO($script),    
+        	    ),
+        	    " id = $id"
+        	);
+
+	        $result = $this->_DB->genQuery($sPeticionSQL);
+	        if (!$result) {error_reporting(E_ALL);
+	            $this->errMsg = $this->_DB->errMsg."<br/>$sPeticionSQL";
+	        }
+	}
+
+	function removeTrunk($id) {
+	        $this->errMsg = "";
+
+	        $sql = "delete from sms_trunk where id = $id";
+
+	        $result = $this->_DB->genQuery($sql);
+	        if (!$result){ 
+	             $this->errMsg = $this->_DB->errMsg."<br/>$sPeticionSQL";
+	        }
+	}
+
+	function createTrunk($name,$active,$service_type,$server,$user,$password,$port,$priority,$clid,$system_type,$append_country_code,$script) {
+	        $this->errMsg = "";
+            
+    		$active = ($active=='on'?1:0);
+    		$append_country_code = ($append_country_code=='on'?1:0);
+
+            $sPeticionSQL = paloDB::construirInsert(
+                    "sms_trunk",
+                    array(
+        	        "name"                  =>  paloDB::DBCAMPO($name),
+        	        "active"                =>  paloDB::DBCAMPO($active),
+        	        "service_type"          =>  paloDB::DBCAMPO($service_type),
+        	        "server"                =>  paloDB::DBCAMPO($server),
+        	        "user"                  =>  paloDB::DBCAMPO($user),
+        	        "password"              =>  paloDB::DBCAMPO($password),
+        	        "port"                  =>  paloDB::DBCAMPO($port),
+        	        "trunk_priority"        =>  paloDB::DBCAMPO($priority),
+        	        "clid"                  =>  paloDB::DBCAMPO($clid),
+        	        "system_type"           =>  paloDB::DBCAMPO($system_type),  
+        	        "append_country_code"   =>  paloDB::DBCAMPO($append_country_code),
+        	        "script"                =>  paloDB::DBCAMPO($script),                                                                                                                    
+        	    )
+                );
+
+	        $result = $this->_DB->genQuery($sPeticionSQL);
+	        if (!$result) {
+	            $this->errMsg = $this->_DB->errMsg."<br/>$sPeticionSQL";
+	        }
+	}
+
+
+    //Comprueba si el sms está escrito íntegramente en alfabeto sms o no
+    function isSmsAlphabet($str) { 
+	    $arr = array (  "0x40","0xA3","0x24","0xA5","0xE8","0xE9","0xF9","0xEC","0xF2","0xC7","0x0A","0xD8","0xF8","0x0D","0xC5","0xE5",
+                        "0x5F","0x0C","0x5E","0x7B","0x7D","0x5C","0x5B","0x7E","0x5D","0x7C","0xC6","0xE6","0xDF","0xC9","0x20","0x21",
+                        "0x22","0x23","0xA4","0x25","0x26","0x27","0x28","0x29","0x2A","0x2B","0x2C","0x2D","0x2E","0x2F","0x30","0x31",
+                        "0x32","0x33","0x34","0x35","0x36","0x37","0x38","0x39","0x3A","0x3B","0x3C","0x3D","0x3E","0x3F","0xA1","0x41",
+                        "0x42","0x43","0x44","0x45","0x46","0x47","0x48","0x49","0x4A","0x4B","0x4C","0x4D","0x4E","0x4F","0x50","0x51",
+                        "0x52","0x53","0x54","0x55","0x56","0x57","0x58","0x59","0x5A","0xC4","0xD6","0xD1","0xDC","0xA7","0xBF","0x61",
+                        "0x62","0x63","0x64","0x65","0x66","0x67","0x68","0x69","0x6A","0x6B","0x6C","0x6D","0x6E","0x6F","0x70","0x71",
+                        "0x72","0x73","0x74","0x75","0x76","0x77","0x78","0x79","0x7A","0xE4","0xF6","0xF1","0xFC","0xE0",
+                        "0x20AC","0x394","0x3A6","0x393","0x39B","0x3A9","0x3A0","0x3A8","0x3A3","0x398","0x39E"
+                     ); 
+
+        for($i = 0;$i < strlen($str); $i++) { 
+		    $c = '0x'.bin2hex(substr($str,$i,1)); 
+
+     	    if (!in_array($c,$arr)) {
+                return false;
+            } 
+    	} 
+
+        return true;
+    } 
+
+	function getUnicode($text) {
+		require_once("/var/www/html/libs/sms/Unicode.php");
+
+		$unicode = new Unicode_String();
+		$unicode->fromUTF8($text);
+
+		$str = "";
+		foreach($unicode->codePoints as $char) {
+			$str .= "&#".$char->codePoint.";";
+		}
+
+		return $str;
+	}
+}
+
+?>

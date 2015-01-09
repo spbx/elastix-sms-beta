@@ -1,0 +1,9 @@
+/opt/elastix/ixxsms/IXXMassiveSMSd.log {
+    missingok
+    notifempty
+    rotate 5
+    postrotate
+        /bin/kill -HUP `cat /opt/elastix/ixxsms/IXXMassiveSMSd.pid 2> /dev/null` 2> /dev/null || true
+    endscript
+}
+

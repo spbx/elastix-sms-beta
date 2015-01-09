@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module>
+  <menulist>
+    <menuitem menuid="ixx_sms" desc="SMS" parent="" module="no"></menuitem>
+
+    <menuitem menuid="ixx_sms_send" desc="Send" parent="ixx_sms" module="yes"></menuitem>
+    <menuitem menuid="ixx_sms_campaign" desc="Campaigns" parent="ixx_sms" module="yes"></menuitem>
+    <menuitem menuid="ixx_sms_list" desc="Lists" parent="ixx_sms" module="yes"></menuitem>
+    <menuitem menuid="ixx_sms_trunk" desc="Trunks" parent="ixx_sms" module="yes"></menuitem>
+    <menuitem menuid="ixx_sms_config" desc="Configuration" parent="ixx_sms" module="yes"></menuitem>
+  </menulist>
+</module>

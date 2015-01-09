@@ -1,0 +1,29 @@
+#!/bin/bash
+
+#Get script arguments
+clid="$1"
+destination="$2"
+text="$3"
+unicode="$4"
+
+#Init return values
+ret_code=0
+ret_message="Message delivered for sending"
+stop_trunk=0
+stop_message=0
+
+#Process message
+#Errors must be processed, if an error occurs fill
+#  ret_code:     a value different to 0
+#  ret_message:  string error message
+#  stop_trunk:   1 if this error must stop all messages for this trunk, for example, if there's no credit
+#  stop_message: 1 if this error mist stop this message, for example, if number is invalid
+
+#Begin
+#Write process message code
+
+#End
+
+#Return
+echo "$ret_code;$ret_message;$stop_trunk;$stop_message"
+exit $ret_code
