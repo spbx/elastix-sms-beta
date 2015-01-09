@@ -312,6 +312,7 @@ Hex Dec Character name Character ISO-8859-1 DEC
 0x7E 126 LATIN SMALL LETTER U WITH DIAERESIS ü 252
 0x7F 127 LATIN SMALL LETTER A WITH GRAVE à 224
 
+
 7. Listas
 El módulo SMS   permite gestionar listas de números. Estas listas de números
 son almacenadas en base de datos y pueden utilizarse para confeccionar campañas.
