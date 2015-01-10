@@ -5,6 +5,7 @@ create groups of numbers, create SMS campaigns and send individual SMS messages
 MÓDULO DE ENVÍO DE SMS PARA ELASTIX
  
 Contenido
+
 1.Introducción
 
 2.Funcionalidades principales
