@@ -5,20 +5,20 @@ create groups of numbers, create SMS campaigns and send individual SMS messages
 MÓDULO DE ENVÍO DE SMS PARA ELASTIX
  
 Contenido
-1.Introducción......................................................................................................................................3
-2.Funcionalidades principales..............................................................................................................3
-3.Instalación.........................................................................................................................................4
-4.Troncales...........................................................................................................................................6
-5.Envío de un mensaje SMS.................................................................................................................8
-5.1.Número de mensajes necesarios para enviar un SMS.............................................................10
-6.Listas...............................................................................................................................................15
-6.1.Creación de una lista mediante un fichero csv de números.....................................................15
-6.2.Creación de una lista a partir del CDR....................................................................................18
-6.3.Administración de listas ya creadas.........................................................................................19
-7.Campañas de envío masivo.............................................................................................................21
-7.1.Preparación del fichero csv para campañas.............................................................................25
-8.Colas de mensajes...........................................................................................................................26
-9.Servicio de envío de mensajes.........................................................................................................26
+1.Introducción
+2.Funcionalidades principales
+3.Instalación
+4.Troncales
+5.Envío de un mensaje SMS
+5.1.Número de mensajes necesarios para enviar un SMS
+6.Listas
+6.1.Creación de una lista mediante un fichero csv de números
+6.2.Creación de una lista a partir del CDR
+6.3.Administración de listas ya creadas
+7.Campañas de envío masivo
+7.1.Preparación del fichero csv para campañas
+8.Colas de mensajes
+9.Servicio de envío de mensajes
  
 MÓDULO DE ENVÍO DE SMS PARA ELASTIX
 1. Introducción
